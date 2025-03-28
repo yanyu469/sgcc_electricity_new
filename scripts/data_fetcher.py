@@ -375,7 +375,8 @@ class DataFetcher:
                 return False
             else:
                 return True
-        except NoSuchElementException:
+        except Exception:
+            logging.info(f"can't find element: el-message-box__message")
             # 当元素不存在时直接返回 True
             return True
 
