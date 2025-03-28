@@ -33,14 +33,6 @@ jobs:
         VERSION=${{ env.version }}
         docker buildx build --build-arg VERSION=${VERSION} --platform $PLATFORMS -t $DOCKER_IMAGE:latest -t $DOCKER_IMAGE:${VERSION} --file Dockerfile-for-github-action --push .
 
-        for ARCH in $ARCH_TAGS; do
-          if [ "$ARCH" == "arm64" ]; then
-            TAG_ARCH="aarch64"
-          else
-            TAG_ARCH=$ARCH
-          fi
-          docker buildx build --build-arg VERSION=${VERSION} --platform linux/${ARCH} -t ${DOCKER_IMAGE}-${TAG_ARCH}:latest -t ${DOCKER_IMAGE}-${TAG_ARCH}:${VERSION}  --file Dockerfile-for-github-action --push .
-        done
 
     # - name: Log into Aliyun hub registry and push Docker image
     #   run: |
