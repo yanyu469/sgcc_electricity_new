@@ -1,19 +1,9 @@
 name: Docker Image Build
 
-on:  
-  workflow_dispatch:
-    inputs:
-      version:
-        description: 'version of this branch'
-        default: 'v1.6.4'
-        required: true
-        type: string
-    paths:
-      - 'scripts/**'
-      - 'Dockerfile-for-github-action'
-      - 'requirements.txt'
-      - 'example.env'
-      - '.github/workflows/docker-image.yml'
+on:
+  push:
+    tags:
+      - 'v*'  # 只监听 v 开头的标签
 
 jobs:
 
@@ -23,6 +13,11 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
+    - name: Extract version
+      id: extract_version
+      run: |
+        echo "version=${GITHUB_REF#refs/tags/}" | sed 's/^v//' >> $GITHUB_ENV
+        
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v1
 
@@ -33,9 +28,9 @@ jobs:
     - name: Build and push Docker image
       run: |
         PLATFORMS=linux/arm64,linux/amd64
-        DOCKER_IMAGE=arcw/sgcc_electricity
+        DOCKER_IMAGE=yanyu469/sgcc_electricity
         ARCH_TAGS="arm64 amd64"        
-        VERSION=${{ inputs.version }}
+        VERSION=${{ env.version }}
         docker buildx build --build-arg VERSION=${VERSION} --platform $PLATFORMS -t $DOCKER_IMAGE:latest -t $DOCKER_IMAGE:${VERSION} --file Dockerfile-for-github-action --push .
 
         for ARCH in $ARCH_TAGS; do
@@ -47,20 +42,20 @@ jobs:
           docker buildx build --build-arg VERSION=${VERSION} --platform linux/${ARCH} -t ${DOCKER_IMAGE}-${TAG_ARCH}:latest -t ${DOCKER_IMAGE}-${TAG_ARCH}:${VERSION}  --file Dockerfile-for-github-action --push .
         done
 
-    - name: Log into Aliyun hub registry and push Docker image
-      run: |
-        echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.ALIYUN_USERNAME }} --password-stdin registry.cn-hangzhou.aliyuncs.com 
-        PLATFORMS=linux/arm64,linux/amd64
-        DOCKER_IMAGE=registry.cn-hangzhou.aliyuncs.com/arcw/sgcc_electricity
-        ARCH_TAGS="arm64 amd64"        
-        VERSION=${{ inputs.version }}
-        docker buildx build --build-arg VERSION=${VERSION} --platform $PLATFORMS -t $DOCKER_IMAGE:latest -t $DOCKER_IMAGE:${VERSION} --file Dockerfile-for-github-action --push .
+    # - name: Log into Aliyun hub registry and push Docker image
+    #   run: |
+    #     echo ${{ secrets.DOCKER_PASSWORD }} | docker login -u ${{ secrets.ALIYUN_USERNAME }} --password-stdin registry.cn-hangzhou.aliyuncs.com 
+    #     PLATFORMS=linux/arm64,linux/amd64
+    #     DOCKER_IMAGE=registry.cn-hangzhou.aliyuncs.com/arcw/sgcc_electricity
+    #     ARCH_TAGS="arm64 amd64"        
+    #     VERSION=${{ inputs.version }}
+    #     docker buildx build --build-arg VERSION=${VERSION} --platform $PLATFORMS -t $DOCKER_IMAGE:latest -t $DOCKER_IMAGE:${VERSION} --file Dockerfile-for-github-action --push .
 
-        for ARCH in $ARCH_TAGS; do
-          if [ "$ARCH" == "arm64" ]; then
-            TAG_ARCH="aarch64"
-          else
-            TAG_ARCH=$ARCH
-          fi
-          docker buildx build --build-arg VERSION=${VERSION} --platform linux/${ARCH} -t ${DOCKER_IMAGE}-${TAG_ARCH}:latest -t ${DOCKER_IMAGE}-${TAG_ARCH}:${VERSION}  --file Dockerfile-for-github-action --push .
-        done
+    #     for ARCH in $ARCH_TAGS; do
+    #       if [ "$ARCH" == "arm64" ]; then
+    #         TAG_ARCH="aarch64"
+    #       else
+    #         TAG_ARCH=$ARCH
+    #       fi
+    #       docker buildx build --build-arg VERSION=${VERSION} --platform linux/${ARCH} -t ${DOCKER_IMAGE}-${TAG_ARCH}:latest -t ${DOCKER_IMAGE}-${TAG_ARCH}:${VERSION}  --file Dockerfile-for-github-action --push .
+    #     done
