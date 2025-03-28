@@ -368,11 +368,15 @@ class DataFetcher:
     def _check_maintain(self, driver):
         driver.get(BALANCE_URL)
         time.sleep(self.RETRY_WAIT_TIME_OFFSET_UNIT)
-        elbox = driver.find_element(By.CLASS_NAME, "el-message-box__message").text
-        if (elbox.find("维护") > 0) or (elbox.find("升级") > 0) :
-            logging.info(f"Webdriver quit :{elbox}")
-            return False
-        else:
+        try:
+            elbox = driver.find_element(By.CLASS_NAME, "el-message-box__message").text
+            if (elbox.find("维护") > 0) or (elbox.find("升级") > 0):
+                logging.info(f"Webdriver quit :{elbox}")
+                return False
+            else:
+                return True
+        except NoSuchElementException:
+            # 当元素不存在时直接返回 True
             return True
 
     def _get_current_userid(self, driver):
